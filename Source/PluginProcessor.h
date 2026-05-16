@@ -4,6 +4,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include "Capture/CaptureManager.h"
+#include "DSP/AudioEngine.h"
 #include "Parameters.h"
 
 class RCCharacterCaptureFXAudioProcessor final : public juce::AudioProcessor
@@ -39,16 +41,19 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     bool isSidechainAvailable() const noexcept;
+    RCCapture::CaptureAnalysis captureLast30Seconds();
+    juce::String getCaptureStatusText() const;
 
     juce::AudioProcessorValueTreeState parameters;
 
 private:
-    void updateSidechainState() noexcept;
-
     std::atomic<float>* bypassParam = nullptr;
     std::atomic<float>* inputGainDbParam = nullptr;
     std::atomic<float>* outputGainDbParam = nullptr;
-    std::atomic<bool> sidechainAvailable { false };
+    std::atomic<float>* learnArmedParam = nullptr;
+    RCDSP::AudioEngine audioEngine;
+    RCCapture::CaptureManager captureManager;
+    RCCapture::CaptureAnalysis lastCaptureAnalysis;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RCCharacterCaptureFXAudioProcessor)
 };

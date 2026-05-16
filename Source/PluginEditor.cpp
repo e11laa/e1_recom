@@ -5,10 +5,19 @@ RCCharacterCaptureFXAudioProcessorEditor::RCCharacterCaptureFXAudioProcessorEdit
     : AudioProcessorEditor (&processor),
       audioProcessor (processor),
       bypassAttachment (audioProcessor.parameters, RCParameters::bypassId, bypassButton),
+      learnArmedAttachment (audioProcessor.parameters, RCParameters::learnArmedId, learnArmedButton),
       inputGainAttachment (audioProcessor.parameters, RCParameters::inputGainDbId, inputGainSlider),
       outputGainAttachment (audioProcessor.parameters, RCParameters::outputGainDbId, outputGainSlider)
 {
     addAndMakeVisible (bypassButton);
+    addAndMakeVisible (learnArmedButton);
+
+    captureButton.onClick = [this]
+    {
+        const auto analysis = audioProcessor.captureLast30Seconds();
+        captureStatusLabel.setText (analysis.statusText, juce::dontSendNotification);
+    };
+    addAndMakeVisible (captureButton);
 
     configureGainSlider (inputGainSlider, inputGainLabel, "Input Gain");
     configureGainSlider (outputGainSlider, outputGainLabel, "Output Gain");
@@ -17,7 +26,11 @@ RCCharacterCaptureFXAudioProcessorEditor::RCCharacterCaptureFXAudioProcessorEdit
     addAndMakeVisible (sidechainLabel);
     updateSidechainLabel();
 
-    setSize (360, 180);
+    captureStatusLabel.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (captureStatusLabel);
+    updateCaptureStatusLabel();
+
+    setSize (400, 240);
     startTimerHz (10);
 }
 
@@ -36,6 +49,7 @@ void RCCharacterCaptureFXAudioProcessorEditor::resized()
     bounds.removeFromTop (30);
 
     bypassButton.setBounds (bounds.removeFromTop (28));
+    learnArmedButton.setBounds (bounds.removeFromTop (28));
     bounds.removeFromTop (8);
 
     auto inputRow = bounds.removeFromTop (36);
@@ -50,11 +64,15 @@ void RCCharacterCaptureFXAudioProcessorEditor::resized()
 
     bounds.removeFromTop (12);
     sidechainLabel.setBounds (bounds.removeFromTop (24));
+    auto captureRow = bounds.removeFromTop (30);
+    captureButton.setBounds (captureRow.removeFromLeft (150));
+    captureStatusLabel.setBounds (bounds.removeFromTop (24));
 }
 
 void RCCharacterCaptureFXAudioProcessorEditor::timerCallback()
 {
     updateSidechainLabel();
+    updateCaptureStatusLabel();
 }
 
 void RCCharacterCaptureFXAudioProcessorEditor::updateSidechainLabel()
@@ -63,6 +81,11 @@ void RCCharacterCaptureFXAudioProcessorEditor::updateSidechainLabel()
                                 ? "Sidechain: OK"
                                 : "Sidechain: Missing",
                             juce::dontSendNotification);
+}
+
+void RCCharacterCaptureFXAudioProcessorEditor::updateCaptureStatusLabel()
+{
+    captureStatusLabel.setText (audioProcessor.getCaptureStatusText(), juce::dontSendNotification);
 }
 
 void RCCharacterCaptureFXAudioProcessorEditor::configureGainSlider (juce::Slider& slider,

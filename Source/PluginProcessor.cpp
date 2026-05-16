@@ -12,19 +12,24 @@ RCCharacterCaptureFXAudioProcessor::RCCharacterCaptureFXAudioProcessor()
     bypassParam = parameters.getRawParameterValue (RCParameters::bypassId);
     inputGainDbParam = parameters.getRawParameterValue (RCParameters::inputGainDbId);
     outputGainDbParam = parameters.getRawParameterValue (RCParameters::outputGainDbId);
+    learnArmedParam = parameters.getRawParameterValue (RCParameters::learnArmedId);
 
     jassert (bypassParam != nullptr);
     jassert (inputGainDbParam != nullptr);
     jassert (outputGainDbParam != nullptr);
+    jassert (learnArmedParam != nullptr);
 }
 
-void RCCharacterCaptureFXAudioProcessor::prepareToPlay (double, int)
+void RCCharacterCaptureFXAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    updateSidechainState();
+    audioEngine.prepare (sampleRate, samplesPerBlock, getMainBusNumOutputChannels());
+    captureManager.prepare (sampleRate, samplesPerBlock, getMainBusNumOutputChannels(), 30.0);
 }
 
 void RCCharacterCaptureFXAudioProcessor::releaseResources()
 {
+    audioEngine.reset();
+    captureManager.reset();
 }
 
 bool RCCharacterCaptureFXAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -51,44 +56,27 @@ void RCCharacterCaptureFXAudioProcessor::processBlock (juce::AudioBuffer<float>&
     juce::ScopedNoDenormals noDenormals;
     midiMessages.clear();
 
-    updateSidechainState();
-
-    auto mainInput = getBusBuffer (buffer, true, 0);
     auto mainOutput = getBusBuffer (buffer, false, 0);
+    juce::AudioBuffer<float> sidechainInput;
+    const juce::AudioBuffer<float>* sidechainInputPtr = nullptr;
 
-    const auto mainChannelsToCopy = juce::jmin (mainInput.getNumChannels(), mainOutput.getNumChannels());
-    const auto numSamples = buffer.getNumSamples();
-
-    for (auto channel = 0; channel < mainChannelsToCopy; ++channel)
-        mainOutput.copyFrom (channel, 0, mainInput, channel, 0, numSamples);
-
-    for (auto channel = mainChannelsToCopy; channel < mainOutput.getNumChannels(); ++channel)
-        mainOutput.clear (channel, 0, numSamples);
-
-    if (mainChannelsToCopy == 0)
+    if (const auto* sidechainBus = getBus (true, 1);
+        sidechainBus != nullptr && sidechainBus->isEnabled())
     {
-        mainOutput.clear();
-        return;
+        sidechainInput = getBusBuffer (buffer, true, 1);
+        sidechainInputPtr = &sidechainInput;
     }
 
-    const auto bypassed = bypassParam != nullptr && bypassParam->load() >= 0.5f;
+    captureManager.setLearnArmed (learnArmedParam != nullptr && learnArmedParam->load() >= 0.5f);
+    captureManager.pushAudioBlock (mainOutput, sidechainInputPtr, mainOutput.getNumSamples());
 
-    if (bypassed)
-        return;
+    audioEngine.setBypass (bypassParam != nullptr && bypassParam->load() >= 0.5f);
+    audioEngine.setInputGainDb (inputGainDbParam != nullptr ? inputGainDbParam->load() : 0.0f);
+    audioEngine.setOutputGainDb (outputGainDbParam != nullptr ? outputGainDbParam->load() : 0.0f);
+    audioEngine.processBlock (mainOutput, sidechainInputPtr);
 
-    const auto inputGain = juce::Decibels::decibelsToGain (inputGainDbParam != nullptr
-                                                               ? inputGainDbParam->load()
-                                                               : 0.0f);
-    const auto outputGain = juce::Decibels::decibelsToGain (outputGainDbParam != nullptr
-                                                                ? outputGainDbParam->load()
-                                                                : 0.0f);
-    const auto gain = inputGain * outputGain;
-
-    if (gain != 1.0f)
-    {
-        for (auto channel = 0; channel < mainChannelsToCopy; ++channel)
-            mainOutput.applyGain (channel, 0, numSamples, gain);
-    }
+    for (auto channel = getMainBusNumInputChannels(); channel < mainOutput.getNumChannels(); ++channel)
+        mainOutput.clear (channel, 0, mainOutput.getNumSamples());
 }
 
 juce::AudioProcessorEditor* RCCharacterCaptureFXAudioProcessor::createEditor()
@@ -166,17 +154,25 @@ void RCCharacterCaptureFXAudioProcessor::setStateInformation (const void* data, 
 
 bool RCCharacterCaptureFXAudioProcessor::isSidechainAvailable() const noexcept
 {
-    return sidechainAvailable.load();
+    return audioEngine.getSidechainPresent();
 }
 
-void RCCharacterCaptureFXAudioProcessor::updateSidechainState() noexcept
+RCCapture::CaptureAnalysis RCCharacterCaptureFXAudioProcessor::captureLast30Seconds()
 {
-    const auto* sidechainBus = getBus (true, 1);
-    const auto hasChannels = sidechainBus != nullptr
-        && sidechainBus->isEnabled()
-        && sidechainBus->getNumberOfChannels() > 0;
+    const auto snapshot = captureManager.createSnapshotLast (30.0);
+    lastCaptureAnalysis = captureManager.analyzeSnapshot (snapshot);
+    return lastCaptureAnalysis;
+}
 
-    sidechainAvailable.store (hasChannels);
+juce::String RCCharacterCaptureFXAudioProcessor::getCaptureStatusText() const
+{
+    if (captureManager.isLearnArmed())
+        return "Capture: Recording";
+
+    if (lastCaptureAnalysis.statusText != "Capture: Empty")
+        return lastCaptureAnalysis.statusText;
+
+    return captureManager.hasCapturedAudio() ? "Capture: Ready" : "Capture: Empty";
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

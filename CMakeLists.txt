@@ -40,6 +40,16 @@ juce_add_plugin(RCCharacterCaptureFX
 
 target_sources(RCCharacterCaptureFX
     PRIVATE
+        Source/Capture/CaptureAnalysis.h
+        Source/Capture/CaptureManager.cpp
+        Source/Capture/CaptureManager.h
+        Source/Capture/CaptureRingBuffer.cpp
+        Source/Capture/CaptureRingBuffer.h
+        Source/Capture/CaptureSnapshot.h
+        Source/DSP/AudioEngine.cpp
+        Source/DSP/AudioEngine.h
+        Source/DSP/DcBlocker.h
+        Source/DSP/SoftLimiter.h
         Source/Parameters.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
@@ -58,4 +68,29 @@ target_link_libraries(RCCharacterCaptureFX
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+
+add_executable(RCCharacterCaptureFX_DSPTests
+    Tests/DSPTests.cpp
+    Source/DSP/AudioEngine.cpp)
+
+target_compile_features(RCCharacterCaptureFX_DSPTests PRIVATE cxx_std_20)
+
+target_link_libraries(RCCharacterCaptureFX_DSPTests
+    PRIVATE
+        juce::juce_audio_basics
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+add_executable(RCCharacterCaptureFX_CaptureTests
+    Tests/CaptureTests.cpp
+    Source/Capture/CaptureManager.cpp
+    Source/Capture/CaptureRingBuffer.cpp)
+
+target_compile_features(RCCharacterCaptureFX_CaptureTests PRIVATE cxx_std_20)
+
+target_link_libraries(RCCharacterCaptureFX_CaptureTests
+    PRIVATE
+        juce::juce_audio_basics
+        juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)

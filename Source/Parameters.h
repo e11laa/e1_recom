@@ -7,6 +7,7 @@ namespace RCParameters
 inline constexpr auto bypassId = "bypass";
 inline constexpr auto inputGainDbId = "inputGainDb";
 inline constexpr auto outputGainDbId = "outputGainDb";
+inline constexpr auto learnArmedId = "learnArmed";
 
 inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
@@ -32,6 +33,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         gainRange,
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel ("dB")));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { learnArmedId, 1 },
+        "Learn Armed",
+        false));
 
     return layout;
 }

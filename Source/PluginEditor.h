@@ -21,18 +21,23 @@ private:
 
     void timerCallback() override;
     void updateSidechainLabel();
+    void updateCaptureStatusLabel();
     void configureGainSlider (juce::Slider& slider, juce::Label& label, const juce::String& text);
 
     RCCharacterCaptureFXAudioProcessor& audioProcessor;
 
     juce::ToggleButton bypassButton { "Bypass" };
+    juce::ToggleButton learnArmedButton { "Learn Armed" };
+    juce::TextButton captureButton { "Capture Last 30s" };
     juce::Slider inputGainSlider;
     juce::Slider outputGainSlider;
     juce::Label inputGainLabel;
     juce::Label outputGainLabel;
     juce::Label sidechainLabel;
+    juce::Label captureStatusLabel;
 
     ButtonAttachment bypassAttachment;
+    ButtonAttachment learnArmedAttachment;
     SliderAttachment inputGainAttachment;
     SliderAttachment outputGainAttachment;
 
