@@ -50,6 +50,15 @@ target_sources(RCCharacterCaptureFX
         Source/DSP/AudioEngine.h
         Source/DSP/DcBlocker.h
         Source/DSP/SoftLimiter.h
+        Source/ML/FeatureExtractor.cpp
+        Source/ML/FeatureExtractor.h
+        Source/ML/ReadoutModel.cpp
+        Source/ML/ReadoutModel.h
+        Source/ML/ReservoirBank.cpp
+        Source/ML/ReservoirBank.h
+        Source/ML/ReservoirConfig.h
+        Source/ML/ReservoirRuntime.cpp
+        Source/ML/ReservoirRuntime.h
         Source/Parameters.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
@@ -72,7 +81,11 @@ target_link_libraries(RCCharacterCaptureFX
 
 add_executable(RCCharacterCaptureFX_DSPTests
     Tests/DSPTests.cpp
-    Source/DSP/AudioEngine.cpp)
+    Source/DSP/AudioEngine.cpp
+    Source/ML/FeatureExtractor.cpp
+    Source/ML/ReadoutModel.cpp
+    Source/ML/ReservoirBank.cpp
+    Source/ML/ReservoirRuntime.cpp)
 
 target_compile_features(RCCharacterCaptureFX_DSPTests PRIVATE cxx_std_20)
 
@@ -90,6 +103,21 @@ add_executable(RCCharacterCaptureFX_CaptureTests
 target_compile_features(RCCharacterCaptureFX_CaptureTests PRIVATE cxx_std_20)
 
 target_link_libraries(RCCharacterCaptureFX_CaptureTests
+    PRIVATE
+        juce::juce_audio_basics
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+add_executable(RCCharacterCaptureFX_MLTests
+    Tests/MLTests.cpp
+    Source/ML/FeatureExtractor.cpp
+    Source/ML/ReadoutModel.cpp
+    Source/ML/ReservoirBank.cpp
+    Source/ML/ReservoirRuntime.cpp)
+
+target_compile_features(RCCharacterCaptureFX_MLTests PRIVATE cxx_std_20)
+
+target_link_libraries(RCCharacterCaptureFX_MLTests
     PRIVATE
         juce::juce_audio_basics
         juce::juce_recommended_config_flags

@@ -14,6 +14,12 @@ void AudioEngine::prepare (double sampleRate, int maxBlockSize, int numChannels)
 
     dcBlocker.prepare (sampleRate, preparedChannels);
     softLimiter.reset();
+
+    RCML::ReservoirConfig reservoirConfig;
+    reservoirConfig.sampleRate = sampleRate;
+    reservoirConfig.numChannels = preparedChannels;
+    reservoirRuntime.prepare (reservoirConfig);
+
     sidechainPresent.store (false);
 }
 
@@ -23,6 +29,7 @@ void AudioEngine::reset()
     outputGain.setCurrentAndTargetValue (outputGain.getTargetValue());
     dcBlocker.reset();
     softLimiter.reset();
+    reservoirRuntime.reset();
     sidechainPresent.store (false);
 }
 
@@ -64,6 +71,8 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& mainBuffer,
         for (auto channel = 0; channel < numChannels; ++channel)
         {
             auto* samples = mainBuffer.getWritePointer (channel);
+            reservoirRuntime.processSample (channel, samples[sample]);
+
             auto value = samples[sample] * currentInputGain;
 
             value = dcBlocker.processSample (channel, value);
@@ -76,6 +85,26 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& mainBuffer,
 bool AudioEngine::getSidechainPresent() const noexcept
 {
     return sidechainPresent.load();
+}
+
+int AudioEngine::getReservoirFeatureCount() const noexcept
+{
+    return reservoirRuntime.getFeatureCount();
+}
+
+bool AudioEngine::isReservoirEnabled() const noexcept
+{
+    return reservoirRuntime.isReservoirEnabled();
+}
+
+float AudioEngine::getLastReservoirPeak() const noexcept
+{
+    return reservoirRuntime.getLastReservoirPeak();
+}
+
+int AudioEngine::getReservoirNanDetectedCount() const noexcept
+{
+    return reservoirRuntime.getNanDetectedCount();
 }
 
 float AudioEngine::dbToGain (float db) noexcept

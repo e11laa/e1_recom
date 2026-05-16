@@ -4,6 +4,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
+#include "../ML/ReservoirRuntime.h"
 #include "DcBlocker.h"
 #include "SoftLimiter.h"
 
@@ -23,6 +24,10 @@ public:
                        const juce::AudioBuffer<float>* sidechainBuffer) noexcept;
 
     bool getSidechainPresent() const noexcept;
+    int getReservoirFeatureCount() const noexcept;
+    bool isReservoirEnabled() const noexcept;
+    float getLastReservoirPeak() const noexcept;
+    int getReservoirNanDetectedCount() const noexcept;
 
 private:
     static float dbToGain (float db) noexcept;
@@ -30,6 +35,7 @@ private:
 
     DcBlocker dcBlocker;
     SoftLimiter softLimiter;
+    RCML::ReservoirRuntime reservoirRuntime;
 
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> inputGain;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> outputGain;

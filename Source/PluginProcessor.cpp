@@ -157,6 +157,26 @@ bool RCCharacterCaptureFXAudioProcessor::isSidechainAvailable() const noexcept
     return audioEngine.getSidechainPresent();
 }
 
+int RCCharacterCaptureFXAudioProcessor::getReservoirFeatureCount() const noexcept
+{
+    return audioEngine.getReservoirFeatureCount();
+}
+
+bool RCCharacterCaptureFXAudioProcessor::isReservoirEnabled() const noexcept
+{
+    return audioEngine.isReservoirEnabled();
+}
+
+float RCCharacterCaptureFXAudioProcessor::getLastReservoirPeak() const noexcept
+{
+    return audioEngine.getLastReservoirPeak();
+}
+
+int RCCharacterCaptureFXAudioProcessor::getReservoirNanDetectedCount() const noexcept
+{
+    return audioEngine.getReservoirNanDetectedCount();
+}
+
 RCCapture::CaptureAnalysis RCCharacterCaptureFXAudioProcessor::captureLast30Seconds()
 {
     const auto snapshot = captureManager.createSnapshotLast (30.0);

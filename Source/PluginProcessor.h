@@ -41,6 +41,10 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     bool isSidechainAvailable() const noexcept;
+    int getReservoirFeatureCount() const noexcept;
+    bool isReservoirEnabled() const noexcept;
+    float getLastReservoirPeak() const noexcept;
+    int getReservoirNanDetectedCount() const noexcept;
     RCCapture::CaptureAnalysis captureLast30Seconds();
     juce::String getCaptureStatusText() const;
 
